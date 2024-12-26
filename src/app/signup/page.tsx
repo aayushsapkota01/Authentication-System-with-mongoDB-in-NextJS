@@ -16,28 +16,29 @@ export default function SignupPage() {
     const [buttonDisabled, setButtonDisabled] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    const onSignup = async (e: React.FormEvent) => {
-        e.preventDefault();  // Prevent default form submission behavior
-        try {
-            setLoading(true);
-            const response = await axios.post("/api/users/signup", user);
-            toast.success("Signup Success");
-            console.log("Signup Success!!", response.data);
+const onSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
 
-            router.push("/login");
-        } catch (error) {
-            if (axios.isAxiosError(error)) {
-                const errorMessage = error.response?.data?.message || "An unexpected error occurred";
-                toast.error(errorMessage);
-                console.log("Signup Failed", errorMessage);
-            } else {
-                toast.error("An unexpected error occurred");
-                console.log("Signup Failed", error);
-            }
-        } finally {
-            setLoading(false);
+    try {
+        const response = await axios.post("/api/users/signup", user);
+        toast.success("Signup Success");
+        console.log("Signup Success!!", response.data);
+        router.push("/login");
+    } catch (error) {
+        let errorMessage = "An unexpected error occurred";
+
+        if (axios.isAxiosError(error) && error.response?.data) {
+            errorMessage = error.response.data.error || errorMessage;
         }
-    };
+
+        toast.error(errorMessage);
+        console.log("Signup Failed:", errorMessage);
+    } finally {
+        setLoading(false);
+    }
+};
+
 
     useEffect(() => {
         if (user.email.length > 0 && user.password.length > 0 && user.username.length > 0) {

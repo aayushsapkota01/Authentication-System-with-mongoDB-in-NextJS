@@ -12,36 +12,35 @@ export async function POST(request: NextRequest) {
         const reqBody = await request.json();
         console.log("Request Body:", reqBody);
 
-        const { username, email, password } = reqBody
+        const { username, email, password } = reqBody;
 
-        // check if user exist
-        const user = await User.findOne({ email })
-         console.log("User Found:", user); // Debug if user exists
+        if (!username || !email || !password) {
+            return NextResponse.json({ error: "All fields are required!" }, { status: 400 });
+        }
+
+        // Ensure email uniqueness (case-insensitive)
+        const user = await User.findOne({ email: new RegExp(`^${email}$`, "i") });
+        console.log("User Found:", user);
         if (user) {
-            return NextResponse.json({error: "User Already Exists!"}, {status: 400})
+            return NextResponse.json({ error: "User Already Exists!" }, { status: 400 });
         }
 
         // Hash Password
-        const salt = await bcryptjs.genSalt(10)
-         console.log("Generated Salt:", salt); // Debug salt generation
-        const hashedPassword = await bcryptjs.hash(password, salt)
-        console.log("Hashed Password:", hashedPassword); // Debug hashed password
+        const hashedPassword = await bcryptjs.hash(password, 10);
+        console.log("Hashed Password:", hashedPassword);
 
+        // Create and save user
+        const newUser = new User({ username, email, password: hashedPassword });
+        const savedUser = await newUser.save();
+        console.log("Saved User:", savedUser);
 
-        // Create a new user
-        const newUser = new User({
-            username,
-            email,
-            password: hashedPassword
-        })
+        return NextResponse.json({
+            message: "User Created Successfully!",
+            success: true,
+        });
 
-        const savedUser = await newUser.save()
-        console.log("Saved User:", savedUser); // Debug user saving
-
-        return NextResponse.json({ message: "User Created Successfully!", success: true, savedUser })
-        
     } catch (error: any) {
-        
-        return NextResponse.json({error: error.message},{status: 500})
+        console.error("Error occurred:", error);
+        return NextResponse.json({ error: error?.message || "Internal Server Error" }, { status: 500 });
     }
 }
